@@ -11,21 +11,25 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
 		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+
+
+	
 	</head>
 	<body class="is-preload">
 
 		<!-- Wrapper -->
 			<div id="wrapper" class="fade-in">
 		<!-- Introduction -->
-<div id="intro">
-    <h1 style="font-size: medium;">Welcome to Bright The Analyst's Portfolio</h1>
-    <p style="text-transform: lowercase;">uncovering meaningful insights from data. every analysis holds the potential to improve well-being. let the numbers narrate the story.</p>
-	     <p #biostatistics #datascience #healthanalytics</p>
-    <p>Proficient in SQL, R, STATA, and Python. Explore my skills on <a href="https://www.linkedin.com/in/bright-amenyo-597a84244/details/certifications/">LinkedIn</a>.</p>
-    <ul class="actions">
-        <li><a href="#header" class="button icon solid solo fa-arrow-down scrolly">Continue</a></li>
-    </ul>
-</div>
+		<div id="intro">
+			<h1 style="font-size: 50px;">Welcome to Bright The Analyst's Portfolio</h1>
+			<p style="text-transform: lowercase;">Uncovering meaningful insights from data. Every analysis holds the potential to improve well-being. Let the numbers narrate the story.</p>
+			<p class="hashtags">#biostatistics #datascience #healthanalytics</p>
+			<p>Proficient in SQL, R, STATA, and Python. Explore my skills on <a href="https://www.linkedin.com/in/bright-amenyo-597a84244/details/certifications/">LinkedIn</a>.</p>
+			<ul class="actions">
+				<li><a href="#header" class="button icon solid solo fa-arrow-down scrolly">Continue</a></li>
+			</ul>
+		</div>
+		
 
 
 
@@ -36,33 +40,42 @@
 						<a href="index.html" class="logo">Bright The Analyst</a>
 					</header>
 
-				<!-- Nav -->
-					<nav id="nav">
-						<ul class="links">
-							<li class="active"><a href="index.html">Projects</a></li>							
-						</ul>
-						<ul class="icons">
-							<li><a href="https://www.linkedin.com/in/bright-amenyo-597a84244/" class="icon brands alt fa-linkedin"><span class="label">linkedin</span></a></li>
-									<li><a href="https://brightamenyo.github.io/Bright_Amenyo.github.io/" class="icon brands alt fa-github"><span class="label">GitHub</span></a></li>
-								</ul>
-					</nav>
+		<!-- Nav -->
+<nav id="nav">
+    <ul class="links">
+        <li class="dropdown">
+            <a href="#" class="icon solid fa-folder">Projects</a>
+            <!-- Dropdown menu for Projects -->
+            <ul class="dropdown-content">
+                <li><a href="data_cleaning.html">The Art of Data Cleaning for Robust Machine Learning</a></li>
+                <li><a href="data_exploration.html">Data Exploration</a></li>
+                <li><a href="statistical_methods.html">Statistical Methods</a></li>
+                <!-- Add more categories as needed -->
+            </ul>
+        </li>
+    </ul>
+    <ul class="icons">
+        <li><a href="https://www.linkedin.com/in/bright-amenyo-597a84244/" class="icon brands alt fa-linkedin"><span class="label">LinkedIn</span></a></li>
+        <li><a href="https://brightamenyo.github.io/Bright_Amenyo.github.io/" class="icon brands alt fa-github"><span class="label">GitHub</span></a></li>
+    </ul>
+</nav>
+
 
 				<!-- Main -->
 					<div id="main">
 
 						<!-- Featured Post -->
-							<article class="post featured">
-								<header class="major">
-									
-									<h2><a href="https://github.com/BrightAmenyo/Bright_Amenyo.github.io/blob/main/Data_cleaning.qmd">Data Cleaning in R <br />
-									</a></h2>
-									<p> Data cleaning in R using 2023 billionaire dataset</p>
-								</header>
-								<a href="https://github.com/BrightAmenyo/Bright_Amenyo.github.io/blob/main/Data_cleaning.qmd" class="image main"><img src="images/png_20220813_215153_0000-1-e1690878290262.png" alt="" /></a>
-								<ul class="actions special">
-									<li><a href="https://github.com/BrightAmenyo/Bright_Amenyo.github.io/blob/main/Data_cleaning.qmd" class="button large">View Project</a></li>
-								</ul>
-							</article>
+						<article class="post featured">
+							<header class="major">
+								<h2 style="font-size: 30px;"><a href="Data_cleaning.html">The Art of Data Cleaning for Robust Machine Learning <br /></a></h2>
+								<p> Embark on a journey through data cleaning with Bright Amenyo! This project focuses on refining raw billionaire statistics, tackling missing values, outliers, and categorical variables. Witness the transformation of chaotic data into a structured, insightful dataset—a crucial step in unraveling meaningful insights. This cleaned dataset becomes a valuable asset for training robust machine learning algorithms, ensuring accurate and reliable results for informed decision-making.</p>
+							</header>
+							<a href="Data_cleaning.html" class="image main"><img src="images/png_20220813_215153_0000-1-e1690878290262.png" alt="" /></a>
+							<ul class="actions special">
+								<li><a href="Data_cleaning.html" class="button large">View Project</a></li>
+							</ul>
+						</article>
+						
 
 						<!-- Posts -->
 							<section class="posts">
@@ -80,7 +93,7 @@
 								<article>
 									<header>
 										<h2><a href="#">Statistical method in R<br />
-										imperdiet lorem</a></h2>
+										</a></h2>
 									</header>
 									<a href="#" class="image fit"><img src="images/wine.jpeg" alt="" /></a>
 									<p>regression analysis using wine quality dataset in R</p>
