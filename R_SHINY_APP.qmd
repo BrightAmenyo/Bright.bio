@@ -1,0 +1,392 @@
+---
+title: "Machine Learning Techniques using DC crime data"
+author: "Bright Amenyo"
+format: html
+editor: visual
+---
+
+# Data Source and data Attributes
+
+1.  **VIOLENT_CRIME**: A binary variable indicating whether the crime is classified as violent (1) or not (0).
+
+2.  **OFFENSE**: The specific type of crime committed.
+
+3.  **METHOD**: The method or weapon used to commit the crime.
+
+4.  **SHIFT**: The MPD (Metropolitan Police Department) shift during which the crime was reported.
+
+5.  **DATE**: The date when the crime occurred.
+
+6.  **TIME**: The time when the crime occurred.
+
+7.  **YEAR**: The year when the crime occurred.
+
+8.  **MONTH**: The month when the crime occurred.
+
+9.  **DAY**: The day of the month when the crime occurred.
+
+10. **DOW**: The day of the week when the crime occurred.
+
+11. **START_DATE**: The start date and time of the crime incident.
+
+12. **LATITUDE**: The latitude coordinates of the crime incident.
+
+13. **LONGITUDE**: The longitude coordinates of the crime incident.
+
+14. **BLOCK**: The block name or identifier where the crime occurred.
+
+15. **WARD**: The district ward identifier.
+
+16. **ANC**: The Advisory Neighborhood Commission identifier.
+
+17. **DISTRICT**: The police district where the crime occurred.
+
+18. **PSA**: The Police Service Area identifier.
+
+19. **NEIGHBORHOOD_CLUSTER**: The neighborhood cluster where the crime occurred.
+
+20. **BLOCK_GROUP**: The census block group where the crime occurred.
+
+21. **CENSUS_TRACT**: The census tract where the crime occurred.
+
+22. **VOTING_PRECINCT**: The voting precinct where the crime occurred.
+
+```{r}
+library(ggplot2)
+library(cowplot)
+library(randomForest)
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+
+
+
+ library(dplyr)
+library(tidyverse)
+library(leaps)
+library(rms)
+library(MASS)
+library(glmnet)
+library(caret)
+library(boot)
+library(car)
+library(olsrr)
+library(tree)
+library(FNN)
+library(class)
+library(pROC)
+library(ggplot2)
+library(kknn)
+```
+
+```{r}
+Crime_data<-read.csv("/Users/brightamenyo/Desktop/April_Project_crime/dc_crime_data.csv")
+str(Crime_data)
+
+```
+
+```{r}
+names(Crime_data)
+```
+
+# Data Cleaning
+
+-   Clean up factors and convert variables
+
+```{r}
+
+# Clean up factors and convert variables
+data <- Crime_data %>%
+  mutate(across(c(OFFENSE, METHOD, SHIFT, YEAR, MONTH, DAY, ANC, DISTRICT, 
+                  NEIGHBORHOOD_CLUSTER, BLOCK_GROUP, VOTING_PRECINCT, BLOCK, WARD),
+                as.factor),
+         DOW = factor(DOW, levels = 0:6, labels = c("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")),
+         VIOLENT_CRIME = factor(VIOLENT_CRIME))
+
+
+
+# Convert START_DATE to datetime format
+data <- data %>% 
+  mutate(START_DATE = ymd_hms(START_DATE),
+         Start_DATE1 = as.Date(START_DATE),
+         Start_TIME = format(START_DATE, "%H:%M:%S"),
+         SEASON = case_when(
+           MONTH %in% c(12, 1, 2) ~ "Winter",
+           MONTH %in% c(3, 4, 5) ~ "Spring",
+           MONTH %in% c(6, 7, 8) ~ "Summer",
+           MONTH %in% c(9, 10, 11) ~ "Fall"
+         ))
+
+# Convert TIME and Start_TIME columns to POSIXct format
+data$TIME <- as.POSIXct(data$TIME, format = "%H:%M:%S")
+data$Start_TIME <- as.POSIXct(data$Start_TIME, format = "%H:%M:%S")
+
+# Calculate absolute difference rounded to nearest integer
+data$MPD_RESPONSE_RATE <- as.numeric(round(abs(difftime(data$TIME, data$Start_TIME, units = "hours"))))
+
+data$Day_of_Week <- wday(as.Date(data$DATE), label = TRUE)
+Data1= data[,-c(5,6,9,10,11,14,16,17,18,19,20,21,22,23,24)]
+Data1$YEAR <- as.numeric(as.character(Data1$YEAR))
+
+
+
+
+```
+
+-   Dealing with missing values
+
+```{r}
+# Convert empty strings to NA
+Data1[Data1 == ""] <- NA ## Just to make sure all the blanks spaces are NA
+
+# Count missing values in each column
+missing_values <- colSums(is.na(Data1))
+
+## Drop missing obs
+Clean_crime_Data <- drop_na(Data1, WARD, MPD_RESPONSE_RATE)
+
+missing_values_cleanData <- colSums(is.na(Clean_crime_Data))
+
+
+
+```
+
+-   *summary Statistics*
+
+```{r}
+Descriptive_stat <- summary(Clean_crime_Data)
+Descriptive_stat
+
+
+
+
+
+```
+
+```{r}
+# Load required libraries
+library(shinyWidgets)
+library(shiny)
+library(ggplot2)
+library(sqldf)
+library(DT)
+library(leaflet)
+
+Clean_crime_Data$YEAR <- as.numeric(as.character(Clean_crime_Data$YEAR))
+
+# Define UI
+ui <- fluidPage(
+  titlePanel("Crime Data Distribution"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("plot_type", "Select Plot Type:",
+                  choices = c("Density Plot", "Box Plot", "Bar Plot", "Scatter Plot")),
+      uiOutput("numeric_selector"),
+      uiOutput("qualitative_selector"),
+      sliderInput("year_slider", "Select Year Range:",
+                  min = min(Clean_crime_Data$YEAR), max = max(Clean_crime_Data$YEAR),
+                  value = c(min(Clean_crime_Data$YEAR), max(Clean_crime_Data$YEAR)), step = 1),
+      actionButton("play_pause", "Play/Pause", icon = icon("play"))
+    ),
+    mainPanel(
+      tabsetPanel(
+        tabPanel("Data Dictionary", verbatimTextOutput("data_dictionary")),  # Panel for data dictionary
+        tabPanel("Plot", plotOutput("distribution_plot"))
+      )
+    )
+  )
+)
+
+# Define server logic
+server <- function(input, output, session) {
+  # Filtered data based on provided offense levels and selected year range
+  filtered_data <- reactive({
+    data <- Clean_crime_Data[Clean_crime_Data$OFFENSE %in% c("ASSAULT W/DANGEROUS WEAPON", "ROBBERY", 
+                                                             "MOTOR VEHICLE THEFT", "BURGLARY", "ARSON", "HOMICIDE", 
+                                                             "SEX ABUSE", "THEFT F/AUTO") & 
+                                Clean_crime_Data$YEAR >= input$year_slider[1] & Clean_crime_Data$YEAR <= input$year_slider[2], ]
+    return(data)
+  })
+  
+  output$numeric_selector <- renderUI({
+    selectInput("numeric_variable", "Select Numeric Variable:",
+                choices = names(Clean_crime_Data))
+  })
+  
+  output$qualitative_selector <- renderUI({
+    selectInput("qualitative_variable", "Select Qualitative Variable:",
+                choices = names(Clean_crime_Data))
+  })
+  
+  output$distribution_plot <- renderPlot({
+    req(input$numeric_variable, input$qualitative_variable, input$plot_type)
+    
+    data <- filtered_data()
+    
+    if(input$plot_type == "Density Plot") {
+      ggplot(data, aes_string(x = input$numeric_variable, fill = input$qualitative_variable)) +
+        geom_density(alpha = 0.5) +
+        labs(x = input$numeric_variable, y = "Density") +
+        theme_minimal()
+    } else if(input$plot_type == "Box Plot") {
+      ggplot(data, aes_string(x = input$qualitative_variable, y = input$numeric_variable)) +
+        geom_boxplot(fill = "skyblue") +
+        labs(x = input$qualitative_variable, y = input$numeric_variable) +
+        theme_minimal()
+    } else if(input$plot_type == "Bar Plot") {
+      ggplot(data, aes_string(x = input$qualitative_variable, fill = input$qualitative_variable)) +
+        geom_bar() +
+        labs(x = input$qualitative_variable, y = "Frequency") +
+        theme_minimal()
+    } else if(input$plot_type == "Scatter Plot") {
+      ggplot(data, aes_string(x = input$numeric_variable, y = input$qualitative_variable)) +
+        geom_point() +
+        labs(x = input$numeric_variable, y = input$qualitative_variable) +
+        theme_minimal()
+    }
+  })
+  
+  output$data_dictionary <- renderText({
+    "Data Source and Data Attributes:
+    VIOLENT_CRIME: A binary variable indicating whether the crime is classified as violent (1) or not (0).
+    OFFENSE: The specific type of crime committed.
+    METHOD: The method or weapon used to commit the crime.
+    SHIFT: The MPD (Metropolitan Police Department) shift during which the crime was reported.
+    YEAR: The year when the crime occurred.
+    MONTH: The month when the crime occurred.
+    DAY: The day of the month when the crime occurred.
+    LATITUDE: The latitude coordinates of the crime incident.
+    LONGITUDE: The longitude coordinates of the crime incident.
+    WARD: The district ward identifier.
+    MPD_RESPONSE_RATE: RATE: Time it took for MPD to respond after the start of the crime.
+    Day_of_Week: Placeholder for the day of the week when the crime occurred.
+    SEASON: Placeholder for the season when the crime occurred."
+  })
+}
+
+# Run the application
+shinyApp(ui = ui, server = server)
+
+```
+
+```{r}
+# Load required libraries
+library(shiny)
+library(leaflet)
+
+Clean_crime_Data$YEAR <- as.numeric(as.character(Clean_crime_Data$YEAR))
+
+# Define UI
+ui <- fluidPage(
+  titlePanel("Crime Data Distribution"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("plot_type", "Select Plot Type:",
+                  choices = c("Density Plot", "Box Plot", "Bar Plot", "Scatter Plot")),
+      uiOutput("numeric_selector"),
+      uiOutput("qualitative_selector"),
+      sliderInput("year_slider", "Select Year Range:",
+                  min = min(Clean_crime_Data$YEAR), max = max(Clean_crime_Data$YEAR),
+                  value = c(min(Clean_crime_Data$YEAR), max(Clean_crime_Data$YEAR)), step = 1),
+      actionButton("play_pause", "Play/Pause", icon = icon("play"))
+    ),
+    mainPanel(
+      tabsetPanel(
+        tabPanel("Data Dictionary", verbatimTextOutput("data_dictionary")),  # Panel for data dictionary
+        tabPanel("Plot", plotOutput("distribution_plot")),
+        tabPanel("Map", leafletOutput("map"))  # Panel for the map
+      )
+    )
+  )
+)
+
+# Define server logic
+server <- function(input, output, session) {
+  # Filtered data based on provided offense levels and selected year range
+  filtered_data <- reactive({
+    data <- Clean_crime_Data[Clean_crime_Data$OFFENSE %in% c("ASSAULT W/DANGEROUS WEAPON", "ROBBERY", 
+                                                             "MOTOR VEHICLE THEFT", "BURGLARY", "ARSON", "HOMICIDE", 
+                                                             "SEX ABUSE", "THEFT F/AUTO") & 
+                                Clean_crime_Data$YEAR >= input$year_slider[1] & Clean_crime_Data$YEAR <= input$year_slider[2], ]
+    return(data)
+  })
+  
+  output$numeric_selector <- renderUI({
+    selectInput("numeric_variable", "Select Numeric Variable:",
+                choices = names(Clean_crime_Data))
+  })
+  
+  output$qualitative_selector <- renderUI({
+    selectInput("qualitative_variable", "Select Qualitative Variable:",
+                choices = names(Clean_crime_Data))
+  })
+  
+  output$distribution_plot <- renderPlot({
+    req(input$numeric_variable, input$qualitative_variable, input$plot_type)
+    
+    data <- filtered_data()
+    
+    if(input$plot_type == "Density Plot") {
+      ggplot(data, aes_string(x = input$numeric_variable, fill = input$qualitative_variable)) +
+        geom_density(alpha = 0.5) +
+        labs(x = input$numeric_variable, y = "Density") +
+        theme_minimal()
+    } else if(input$plot_type == "Box Plot") {
+      ggplot(data, aes_string(x = input$qualitative_variable, y = input$numeric_variable)) +
+        geom_boxplot(fill = "skyblue") +
+        labs(x = input$qualitative_variable, y = input$numeric_variable) +
+        theme_minimal()
+    } else if(input$plot_type == "Bar Plot") {
+      ggplot(data, aes_string(x = input$qualitative_variable, fill = input$qualitative_variable)) +
+        geom_bar() +
+        labs(x = input$qualitative_variable, y = "Frequency") +
+        theme_minimal()
+    } else if(input$plot_type == "Scatter Plot") {
+      ggplot(data, aes_string(x = input$numeric_variable, y = input$qualitative_variable)) +
+        geom_point() +
+        labs(x = input$numeric_variable, y = input$qualitative_variable) +
+        theme_minimal()
+    }
+  })
+  
+  output$data_dictionary <- renderText({
+    "Data Source and Data Attributes:
+    VIOLENT_CRIME: A binary variable indicating whether the crime is classified as violent (1) or not (0).
+    OFFENSE: The specific type of crime committed.
+    METHOD: The method or weapon used to commit the crime.
+    SHIFT: The MPD (Metropolitan Police Department) shift during which the crime was reported.
+    YEAR: The year when the crime occurred.
+    MONTH: The month when the crime occurred.
+    DAY: The day of the month when the crime occurred.
+    LATITUDE: The latitude coordinates of the crime incident.
+    LONGITUDE: The longitude coordinates of the crime incident.
+    WARD: The district ward identifier.
+    MPD_RESPONSE_RATE: RATE: Time it took for MPD to respond after the start of the crime.
+    Day_of_Week: Placeholder for the day of the week when the crime occurred.
+    SEASON: Placeholder for the season when the crime occurred."
+  })
+  
+  output$map <- renderLeaflet({
+    leaflet() %>%
+      addTiles() %>%
+      addCircleMarkers(
+        data = filtered_data(),
+        lat = ~LATITUDE,
+        lng = ~LONGITUDE,
+        radius = 5,
+        color = "red",
+        fillOpacity = 0.8,
+        popup = paste(
+          "Offense:", filtered_data()$OFFENSE, "<br>",
+          "SEASON:", filtered_data()$SEASON, "<br>",
+          "METHOD:", filtered_data()$METHOD, "<br>",
+          "MPD_RESPONSE_RATE:", filtered_data()$MPD_RESPONSE_RATE
+        )
+      )
+  })
+}
+
+# Run the application
+shinyApp(ui = ui, server = server)
+
+```
