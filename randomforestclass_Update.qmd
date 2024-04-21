@@ -1,0 +1,403 @@
+---
+title: "Random Forest Classification"
+author: "Bright Amenyo"
+format: html
+editor: visual
+---
+
+```{r}
+library(ggplot2)
+library(cowplot)
+library(randomForest)
+library(tidyverse)
+
+
+
+library(rpart) # Decision tree
+library(rpart.plot) # tree plotting
+library(caret) # Confusion Matrix
+library(Metrics) # Accuracy metric
+
+
+```
+
+## Data source and Attribute
+
+$[Heart Disease Dataset](http://archive.ics.uci.edu/ml/datasets/Heart+Disease)$
+
+1.  Age (age)
+
+2.  Sex (sex)
+
+3.  Chest Pain Type (cp)
+
+4.  Resting Blood Pressure (trestbps)
+
+5.  Serum Cholesterol (chol)
+
+6.  Fasting Blood Sugar \> 120 mg/dl (fbs)
+
+7.  Resting Electrocardiographic Results (restecg)
+
+8.  Maximum Heart Rate Achieved (thalach)
+
+9.  Exercise Induced Angina (exang)
+
+10. ST Depression Induced by Exercise Relative to Rest (oldpeak)
+
+11. Slope of the Peak Exercise ST Segment (slope)
+
+12. Number of Major Vessels Colored by Flourosopy (ca)
+
+13. Thalassemia (thal)
+
+14. Diagnosis of Heart Disease (num) (Predicted Attribute)
+
+    # Data collection
+
+    ```{r}
+    url <- "http://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data"
+
+
+    data <- read.csv(url, header=FALSE)
+    head(data) 
+    ```
+
+# Data Cleaning and Preprocessing
+
+-   **Renaming the columns**
+
+```{r}
+colnames(data) <- c(
+  "age",
+  "sex",# 0 = female, 1 = male
+  "cp", # chest pain 
+          # 1 = typical angina, 
+          # 2 = atypical angina, 
+          # 3 = non-anginal pain, 
+          # 4 = asymptomatic
+  "trestbps", # resting blood pressure (in mm Hg)
+  "chol", # serum cholestoral in mg/dl
+  "fbs",  # fasting blood sugar if less than 120 mg/dl, 1 = TRUE, 0 = FALSE
+  "restecg", # resting electrocardiographic results
+          # 1 = normal
+          # 2 = having ST-T wave abnormality
+          # 3 = showing probable or definite left ventricular hypertrophy
+  "thalach", # maximum heart rate achieved
+  "exang",   # exercise induced angina, 1 = yes, 0 = no
+  "oldpeak", # ST depression induced by exercise relative to rest
+  "slope", # the slope of the peak exercise ST segment 
+          # 1 = upsloping 
+          # 2 = flat 
+          # 3 = downsloping 
+  "ca", # number of major vessels (0-3) colored by fluoroscopy
+  "thal", # this is short of thalium heart scan
+          # 3 = normal (no cold spots)
+          # 6 = fixed defect (cold spots during rest and exercise)
+          # 7 = reversible defect (when cold spots only appear during exercise)
+  "hd" # (the predicted attribute) - diagnosis of heart disease 
+          # 0 if less than or equal to 50% diameter narrowing
+          # 1 if greater than 50% diameter narrowing
+  )
+
+head(data)
+str(data)
+
+
+
+
+```
+
+-   ***Changing Data types and Structures***
+
+```{r}
+# Replace "?"s with NAs
+data <- data %>%
+  mutate_all(~ifelse(. == "?", NA, .))
+
+# Clean up factors and convert variables
+data <- data %>%
+  mutate(sex = factor(ifelse(sex == 0, "F", "M")),
+         cp = as.factor(cp),
+         fbs = as.factor(fbs),
+         restecg = as.factor(restecg),
+         exang = as.factor(exang),
+         slope = as.factor(slope),
+         ca = as.factor(as.integer(ca)), # Convert to factor after converting to integer
+         thal = as.factor(as.integer(thal)),
+         hd = factor(ifelse(hd == 0, "Healthy", "Unhealthy")))
+
+# Print structure of data
+data_hd <-na.omit(data) # Data for modeling
+glimpse(data_hd)
+# Count missing values in each column
+missing_values <- colSums(is.na(data_hd))
+
+
+```
+
+-   **\# Decision Tree**
+
+```{r}
+# Load required libraries for rpart.plot
+library(rpart)
+library(rpart.plot)
+
+# Set seed for reproducibility
+set.seed(42)
+
+# Sample the data into training and testing sets
+Z <- sample(2, nrow(data_hd), prob = c(0.8, 0.2), replace = TRUE)
+hd_train <- data_hd[Z == 1, ]
+hd_test <- data_hd[Z == 2, ]
+
+# Train the rpart model
+hd_model <- rpart(formula = hd ~ ., data = hd_train, method = "class")
+# Visualize the decision tree
+rpart.plot(hd_model, yesno = 2, type = 0,extra = 0)
+
+```
+
+```{r}
+hd_prediction<-predict(object = hd_model,newdata = hd_test,type = "class")
+
+confusionMatrix(data = hd_prediction,reference = hd_test$hd)
+
+accuracy(actual = hd_prediction,hd_test$hd)
+```
+
+# **Tree splitting criteria based comparison**
+
+```{r}
+## Tree splitting criteria based comparison
+# Model training based on gini-based splitting criteria
+hd_mode11 <- rpart(formula = hd~.,data = hd_train,method = "class",
+parms = list(split = "gini"))
+# Model training based o] information gain-based splitting criteria
+hd_model2 <- rpart(formula = hd~.,
+                   data = hd_train,
+                   method = "class", 
+                   parms = list (split = "information"))
+
+# Generate class predictions on the test data using gini-based splitting criteria
+pred1 <- predict(object = hd_mode11,
+newdata = hd_test,type = "class")
+confusionMatrix(data = pred1,reference = hd_test$hd)
+
+accuracy(actual = pred1,hd_test$hd)
+rpart.plot(hd_mode11, yesno = 2, type = 0,extra = 0)
+
+
+pred2 <- predict(object = hd_model2,
+newdata = hd_test,type = "class")
+
+confusionMatrix(data = pred2,reference = hd_test$hd)
+
+accuracy(actual = pred2,hd_test$hd)
+rpart.plot(hd_model2, yesno = 2, type = 0,extra = 0)
+
+
+
+
+```
+
+# **Pruning of Heart model**
+
+```{r}
+# Plot the Complexity Parameter (CP) Table
+printcp(hd_mode11)
+
+# Retrieve the index of the optimal CP value based on cross-validated error
+index <- which.min(hd_mode11$cptable[, "xerror"])
+
+# Retrieve the optimal CP value
+cp_optimal <- hd_mode11$cptable[index, "CP"]
+
+# Prune the tree based on the optimal CP value
+hd_mode11_opt <- prune(tree = hd_mode11, cp = cp_optimal)
+hd_mode11_opt
+
+
+## plot optimal model
+pred3 <- predict(object = hd_mode11_opt,
+newdata = hd_test,type = "class")
+confusionMatrix(data = pred1,reference = hd_test$hd)
+
+accuracy(actual = pred1,hd_test$hd)
+rpart.plot(hd_mode11_opt, yesno = 2, type = 0,extra = 0)
+
+
+
+```
+
+#  Hyper parameter Grid Search
+
+```{r}
+## the minimum number of observations that must exist in a node in order for a split 1
+## Set the maximum depth of any node of the final tree
+minsplit <- seq(1, 20, 1) 
+maxdepth <- seq(1, 20, 1)
+
+# Generate a search grid
+hyperparam_grid <- expand.grid(minsplit = minsplit, maxdepth = maxdepth)
+
+number_models= nrow(hyperparam_grid)
+
+# create an empty list 
+
+hd_modelling <- list()
+
+## write a loop to save the models
+for(i in 1:number_models ){
+  minsplit <- hyperparam_grid$minsplit[i]
+  maxdepth <- hyperparam_grid$maxdepth[i]
+  
+  hd_modelling[[i]]<-rpart(formula = hd ~ ., data = hd_train,
+                         method = "class",
+                         minsplit = minsplit,
+                         maxdepth = maxdepth)
+  
+}
+
+
+num_models <- length(hd_modelling)
+# Create an empty vector to store accuracy values
+accuracy_values <- c()
+# Use for loop for models accuracy estimation
+for (i in 1: num_models) {
+# Retrieve the model i from the list
+model_heartd <- hd_modelling[[i]]
+
+hd_prediction1<-predict(object = model_heartd,newdata = hd_test,type = "class")
+
+accuracy_values[[i]] <-accuracy(actual = hd_prediction1,hd_test$hd)
+
+}
+# Identify the index of the model with maximum accuracy
+best_model_index <- which.max(accuracy_values)
+# Retrieve the best model
+best_model <- hd_modelling[[best_model_index]]
+# Print the model hyperparameters of the best model
+best_model$control
+
+# Calculate accuracy of the best model on test data
+pred <- predict(object = best_model, newdata = hd_test, type = "class")
+accuracy(actual = hd_test$hd, predicted = pred)
+
+# Plot the best model
+rpart.plot(best_model, yesno = 2, type = 0, extra = 0)
+
+```
+
+# Random forest
+
+-   "training" dataset is the bootstrapped data
+
+-   "test" dataset is the remaining samples (the "Out-Of-Bag" (OOB) data.)
+
+-   when we set iter=6, OOB-error bounces around between 17% and 18%. by Breiman
+
+-   We want to predict heart disease "hd" with13 variables, and this mtry = sqrt(13) = 3.6 rounded down =3 by default.
+
+```{r}
+set.seed(42)
+
+## impute any missing values in the training set using proximities
+data.imputed <- rfImpute(hd ~ ., data = data, iter=6)
+
+model <- randomForest(hd ~ ., data=data.imputed, proximity=TRUE)
+model
+
+```
+
+-   *Is random forest is actually big enough...*
+
+```{r}
+oob.error.data <- data.frame(
+  Trees=rep(1:nrow(model$err.rate), times=3),
+  Type=rep(c("OOB", "Healthy", "Unhealthy"), each=nrow(model$err.rate)),
+  Error=c(model$err.rate[,"OOB"], 
+    model$err.rate[,"Healthy"], 
+    model$err.rate[,"Unhealthy"]))
+
+ggplot(data=oob.error.data, aes(x=Trees, y=Error)) +
+  geom_line(aes(color=Type))
+# ggsave("oob_error_rate_500_trees.pdf")
+
+
+```
+
+```{r}
+set.seed(42)
+
+model_100 <- randomForest(hd ~ ., data=data.imputed, ntree=1000, proximity=TRUE)
+model_100
+
+oob.error.data <- data.frame(
+  Trees=rep(1:nrow(model_100$err.rate), times=3),
+  Type=rep(c("OOB", "Healthy", "Unhealthy"), each=nrow(model_100$err.rate)),
+  Error=c(model_100$err.rate[,"OOB"], 
+    model_100$err.rate[,"Healthy"], 
+    model_100$err.rate[,"Unhealthy"]))
+
+ggplot(data=oob.error.data, aes(x=Trees, y=Error)) +
+  geom_line(aes(color=Type))
+# ggsave("oob_error_rate_1000_trees.pdf")
+```
+
+After building a random forest with 1,000 trees, we get the same OOB-error 16.5% and we can see convergence in the graph. So we could have gotten away with only 500 trees, but we wouldn't have been sure that number was enough.
+
+-   checking if the number of predictors use is optimal
+
+```{r}
+set.seed(42)
+## If we want to compare this random forest to others with different values for
+## mtry (to control how many variables are considered at each step)...
+oob.values <- vector(length=10)
+for(i in 1:10) {
+  temp.model <- randomForest(hd ~ ., data=data.imputed, mtry=i, ntree=1000)
+  oob.values[i] <- temp.model$err.rate[nrow(temp.model$err.rate),1]
+}
+oob.values
+## find the minimum error
+min(oob.values)
+## find the optimal value for mtry...
+which(oob.values == min(oob.values))
+
+```
+
+# MDS-plot
+
+```{r}
+set.seed(42)
+## create a model for proximities using the best value for mtry
+model <- randomForest(hd ~ ., 
+                      data=data.imputed,
+                      ntree=1000, 
+                      proximity=TRUE, 
+                      mtry=which(oob.values == min(oob.values)))
+
+
+## Start by converting the proximity matrix into a distance matrix.
+distance.matrix <- as.dist(1-model$proximity)
+
+mds.stuff <- cmdscale(distance.matrix, eig=TRUE, x.ret=TRUE)
+
+## calculate the percentage of variation that each MDS axis accounts for...
+mds.var.per <- round(mds.stuff$eig/sum(mds.stuff$eig)*100, 1)
+
+## now make a fancy looking plot that shows the MDS axes and the variation:
+mds.values <- mds.stuff$points
+mds.data <- data.frame(Sample=rownames(mds.values),
+  X=mds.values[,1],
+  Y=mds.values[,2],
+  Status=data.imputed$hd)
+
+ggplot(data=mds.data, aes(x=X, y=Y, label=Sample)) + 
+  geom_text(aes(color=Status)) +
+  theme_bw() +
+  xlab(paste("MDS1 - ", mds.var.per[1], "%", sep="")) +
+  ylab(paste("MDS2 - ", mds.var.per[2], "%", sep="")) +
+  ggtitle("MDS plot using (1 - Random Forest Proximities)")
+# ggsave(file="random_forest_mds_plot.pdf")
+```
