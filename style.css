@@ -336,13 +336,13 @@ form .btn2{
     text-decoration: none;
 }
 /* -----------------css for small screens--------- */
-nav .fas{
-    display: none;
+nav .fas {
+    font-size: 20px; /* Adjust the font size of the icon as needed */
 }
 
-@media only screen and (max-width: 600px){
+@media only screen and (max-width: 767px){
     #header{
-        background-image: url(images/phone-background.png);
+        background-image: url(images/backG5.avif);
     }
     .header-text{
         margin-top: 100%;
