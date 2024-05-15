@@ -111,6 +111,14 @@ nav ul li a:hover::after{
 .open #closemenu {
     display: block; /* Show close icon when menu is open */
 }
+function openmenu() {
+    document.querySelector('nav').classList.add('open');
+}
+
+function closemenu() {
+    document.querySelector('nav').classList.remove('open');
+}
+
 
 
 
