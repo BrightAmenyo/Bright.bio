@@ -83,6 +83,38 @@ nav ul li a:hover::after{
 .header-text p:first-of-type {
     margin-bottom: 20px; /* Add margin only after the first paragraph */
 }
+
+
+
+
+
+
+
+
+#sidemenu {
+    display: none; /* Hide menu by default */
+}
+
+#closemenu {
+    display: none; /* Hide close icon by default */
+}
+
+/* Styles for displaying the menu when open */
+.open #sidemenu {
+    display: block;
+}
+
+.open #openmenu {
+    display: none; /* Hide open icon when menu is open */
+}
+
+.open #closemenu {
+    display: block; /* Show close icon when menu is open */
+}
+
+
+
+
 /* -----------about--------------- */
 #about{
     padding: 80px 0;
