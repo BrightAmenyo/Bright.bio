@@ -35,46 +35,6 @@ nav{
     width: 140px;
 }
 
-#sidemenu {
-    list-style: none;
-    position: fixed;
-    top: 0;
-    right: -200px; /* Menu is hidden by default */
-    width: 200px;
-    height: 100%;
-    background-color: #333;
-    padding-top: 60px;
-    transition: right 0.3s;
-    z-index: 1;
-}
-
-#sidemenu li {
-    margin: 20px 0;
-}
-
-#sidemenu a {
-    color: white;
-    text-decoration: none;
-    font-size: 18px;
-    display: block;
-    text-align: center;
-}
-
-.fas {
-    font-size: 24px;
-    cursor: pointer;
-    display: none; /* Hidden by default */
-}
-
-@media (max-width: 768px) {
-    .fas {
-        display: block; /* Show the bars and times icons on small screens */
-    }
-
-    #sidemenu {
-        right: -200px; /* Ensure the menu is hidden initially */
-    }
-}
 nav ul li{
     display: inline-block;
     list-style: none;
