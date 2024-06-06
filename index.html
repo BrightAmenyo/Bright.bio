@@ -12,20 +12,32 @@
 </head>
 <body>
 <div id="header">
-    <div class="container">
-        <nav>
-    <img src="images/logo1.jpg" class="logo" alt="Logo">
-    <ul id="sidemenu">
-        <li><a href="#header">Home</a></li>
-        <li><a href="#about">About</a></li>
-        <li><a href="#My Books">My Books</a></li>
-        <li><a href="#portfolio">Portfolio</a></li>
-        <li><a href="#contact">Contact</a></li>
-	    <i class="fas fa-bars" onclick="openmenu()"></i>
-    </ul>
-    <i class="fas fa-times" onclick="closemenu()"></i>
-    
-</nav>
+        <div class="container">
+            <nav>
+                <img src="images/logo1.jpg" class="logo" alt="Logo">
+                <ul id="sidemenu">
+                    <li><a href="#header">Home</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#portfolio">Portfolio</a></li>
+                    <li><a href="#MyBooks">My Books</a></li> <!-- Removed space in href -->
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+                <i class="fas fa-bars" onclick="openmenu()"></i>
+                <i class="fas fa-times" onclick="closemenu()"></i>
+            </nav>
+        </div>
+    </div>
+
+    <script>
+        function openmenu() {
+            document.getElementById('sidemenu').style.right = "0";
+        }
+
+        function closemenu() {
+            document.getElementById('sidemenu').style.right = "-200px";
+        }
+    </script>
+
 
 
 		<div class="header-text">
