@@ -16,6 +16,7 @@ body{
     height: 100vh;
     background-image: url(images/back_ml.jpeg);
     background-size: cover;
+    filter: brightness(50%);
     background-position: center;
     background-attachment: fixed;
     
