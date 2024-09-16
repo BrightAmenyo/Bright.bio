@@ -16,7 +16,8 @@ body{
     height: 100vh;
     background-image: url(images/back_ml.jpeg);
     background-size: cover;
-    filter: brightness(40%);
+    background-color: rgba(0, 0, 0, 0.5);
+    background-blend-mode: darken;
     background-position: center;
     background-attachment: fixed;
     
